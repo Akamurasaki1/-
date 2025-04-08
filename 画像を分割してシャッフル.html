@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像分割とシャッフル</title>
+  <style>
+    #output {
+      display: grid;
+      gap: 2px;
+    }
+    #output img {
+      width: 100%;
+      height: auto;
+    }
+    #originalImage {
+      margin-top: 20px;
+      display: none;
+      text-align: center;
+    }
+    #originalImage img {
+      max-width: 200px;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>画像分割とシャッフル</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <label for="rows">縦分割数:</label>
+  <input type="number" id="rows" min="1" value="2">
+  <label for="cols">横分割数:</label>
+  <input type="number" id="cols" min="1" value="2">
+  <button id="processButton">画像を処理</button>
+  <button id="showOriginalButton">元の画像を表示</button>
+  <div id="output"></div>
+  <div id="originalImage">
+    <h2>元の画像</h2>
+    <img id="originalImageElement" src="" alt="元の画像">
+  </div>
+
+  <script>
+    document.getElementById('processButton').addEventListener('click', () => {
+      const fileInput = document.getElementById('imageInput');
+      const rows = parseInt(document.getElementById('rows').value, 10);
+      const cols = parseInt(document.getElementById('cols').value, 10);
+      const output = document.getElementById('output');
+      const originalImageElement = document.getElementById('originalImageElement');
+      const originalImageContainer = document.getElementById('originalImage');
+
+      if (!fileInput.files[0]) {
+        alert('画像をアップロードしてください');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(event) {
+        const img = new Image();
+        img.src = event.target.result;
+
+        // 元の画像を設定
+        originalImageElement.src = event.target.result;
+        originalImageContainer.style.display = 'none';
+
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const pieceWidth = img.width / cols;
+          const pieceHeight = img.height / rows;
+
+          const pieces = [];
+          canvas.width = pieceWidth;
+          canvas.height = pieceHeight;
+
+          for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+              ctx.clearRect(0, 0, pieceWidth, pieceHeight);
+              ctx.drawImage(
+                img,
+                col * pieceWidth,
+                row * pieceHeight,
+                pieceWidth,
+                pieceHeight,
+                0,
+                0,
+                pieceWidth,
+                pieceHeight
+              );
+              pieces.push(canvas.toDataURL());
+            }
+          }
+
+          // シャッフル
+          for (let i = pieces.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+          }
+
+          // 出力
+          output.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+          output.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+          output.innerHTML = '';
+          pieces.forEach(piece => {
+            const imgElement = document.createElement('img');
+            imgElement.src = piece;
+            output.appendChild(imgElement);
+          });
+        };
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('showOriginalButton').addEventListener('click', () => {
+      const originalImageContainer = document.getElementById('originalImage');
+      if (originalImageContainer.style.display === 'none') {
+        originalImageContainer.style.display = 'block';
+      } else {
+        originalImageContainer.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
